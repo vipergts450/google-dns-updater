@@ -98,7 +98,9 @@ def main(request):
             for data in record.rrdatas:
                 if test_for_record_change(data, ipv6):
                     add_to_change_set(record, 'delete')
+		    logging.info("Deletion: {}".format(changes))
                     add_to_change_set(create_record_set(host, record.record_type, ipv6), 'create')
+		    logging.info("Addition: {}".format(changes))
                     aaaa_record_changed = True
                     ret_val += "IPv6 changed successful.\n"
                 else:
