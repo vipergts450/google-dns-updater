@@ -80,34 +80,63 @@ def main(request):
     # Get a list of the current records
     records = get_records()
 	
-
-    # Check for matching records
-    for record in records:
-        if record.name == host and record.record_type == 'A' and ipv4:
-            a_record_found = True
-            for data in record.rrdatas:
-                if test_for_record_change(data, ipv4):
-                    add_to_change_set(record, 'delete')
-                    add_to_change_set(create_record_set(host, record.record_type, ipv4), 'create')
-                    a_record_changed = True
-                    ret_val += "IPv4 changed successful.\n"
-                else:
-                    ret_val += "IPv4 record up to date.\n"
-        if record.name == host and record.record_type == 'AAAA' and ipv6:
-            aaaa_record_found = True
-            for data in record.rrdatas:
-                if test_for_record_change(data, ipv6):
-                    add_to_change_set(record, 'delete')
-                    #logging.info("Deletion: {}".format(changes))
-                    add_to_change_set(create_record_set(host, record.record_type, ipv6), 'create')
-                    #logging.info("Addition: {}".format(changes))
-                    aaaa_record_changed = True
-                    ret_val += "IPv6 changed successful.\n"
-                else:
-                    ret_val += "IPv6 Record up to date.\n"
+# Old way
+#    # Check for matching records
+#    for record in records:
+#        if record.name == host and record.record_type == 'A' and ipv4:
+#            a_record_found = True
+#            for data in record.rrdatas:
+#                if test_for_record_change(data, ipv4):
+#                    add_to_change_set(record, 'delete')
+#                    add_to_change_set(create_record_set(host, record.record_type, ipv4), 'create')
+#                    a_record_changed = True
+#                    ret_val += "IPv4 changed successful.\n"
+#                else:
+#                    ret_val += "IPv4 record up to date.\n"
+#        if record.name == host and record.record_type == 'AAAA' and ipv6:
+#            aaaa_record_found = True
+#            for data in record.rrdatas:
+#                if test_for_record_change(data, ipv6):
+#                    add_to_change_set(record, 'delete')
+#                    #logging.info("Deletion: {}".format(changes))
+#                    add_to_change_set(create_record_set(host, record.record_type, ipv6), 'create')
+#                    #logging.info("Addition: {}".format(changes))
+#                    aaaa_record_changed = True
+#                    ret_val += "IPv6 changed successful.\n"
+#                else:
+#                    ret_val += "IPv6 Record up to date.\n"
+	
+# New update to handle split changes
+	for record in records:
+		if record.name == host and record.record_type == 'A' and ipv4:
+			a_record_found = True
+			for data in record.rrdatas:
+				if test_for_record_change(data, ipv4):
+					a_record_changed = True
+					ret_val += "IPv4 record needs updating.\n"
+			a_record_checked = record
+				
+		if record.name == host and record.record_type == 'AAAA' and ipv6:
+			aaaa_record_found = True
+			for data in record.rrdatas:
+				if test_for_record_change(data, ipv6):
+					aaaa_record_changed = True
+					ret_val += "IPv6 record needs updating.\n"
+			aaaa_record_checked = record
+		
+	if (a_record_changed or aaaa_record_changed):
+		add_to_change_set(a_record_checked, 'delete')
+		add_to_change_set(create_record_set(host, a_record_checked.record_type, ipv4), 'create')
+		add_to_change_set(aaaa_record_checked, 'delete')
+		add_to_change_set(create_record_set(host, aaaa_record_checked.record_type, ipv6), 'create')
+		ret_val += "IPv4 and IPv6 records updated successfully.\n"
+				
 
     if not (a_record_found or aaaa_record_found):
         ret_val = "No matching records.\n"
+
+	if not (a_record_changed or aaaa_record_changed):
+		ret_val += "IPv4 and IPv6 records are up to date.\n"
 
     if a_record_changed or aaaa_record_changed:
         execute_change_set(changes)
@@ -146,7 +175,7 @@ def test_for_record_change(old_ip, new_ip):
     logging.info("Existing IP is {}".format(old_ip))
     logging.info("New IP is {}".format(new_ip))
     if old_ip != new_ip:
-        logging.info("IP addresses do no match. Update required.")
+        logging.info("IP addresses do not match. Update required.")
         return True
     else:
         logging.info("IP addresses match. No update required.")
