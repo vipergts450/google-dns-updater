@@ -115,7 +115,7 @@ def main(request):
 					a_record_changed = True
 					ret_val += "IPv4 record needs updating.\n"
 			a_record_checked = record
-				
+		
 		if record.name == host and record.record_type == 'AAAA' and ipv6:
 			aaaa_record_found = True
 			for data in record.rrdatas:
