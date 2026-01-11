@@ -49,6 +49,8 @@ def main(request):
     a_record_changed = False
     aaaa_record_changed = False
     ret_val = ""
+    a_record_chedked = ""
+    aaaa_record_checked = ""
     
     logging.info("Update request started.")
 
@@ -115,6 +117,7 @@ def main(request):
                     a_record_changed = True
                     ret_val += "IPv4 record needs updating.\n"
             a_record_checked = record
+            logging.debug("A record data: {}".format(a_record_checked))
             
         if record.name == host and record.record_type == 'AAAA' and ipv6:
             aaaa_record_found = True
@@ -123,6 +126,7 @@ def main(request):
                     aaaa_record_changed = True
                     ret_val += "IPv6 record needs updating.\n"
             aaaa_record_checked = record
+            logging.debug("AAAA record data: {}".format(aaaa_record_checked))
             
     if (a_record_changed or aaaa_record_changed):
         add_to_change_set(a_record_checked, 'delete')
