@@ -30,6 +30,7 @@ client = dns.Client(project=cfg.gcpProject, credentials=credentials)
 zone = client.zone(cfg.gcpDnsZoneName, cfg.gcpDnsDomain)
 
 records = ""
+changes_result = ""
 changes = zone.changes()
 
 
@@ -138,7 +139,6 @@ def main(request):
         add_to_change_set(create_record_set(host, a_record_checked.record_type, ipv4), 'create')
         add_to_change_set(aaaa_record_checked, 'delete')
         add_to_change_set(create_record_set(host, aaaa_record_checked.record_type, ipv6), 'create')
-        ret_val += "IPv4 and IPv6 records updated successfully.\n"
         
     if not (a_record_found or aaaa_record_found):
         ret_val = "No matching records.\n"
@@ -147,8 +147,12 @@ def main(request):
         ret_val += "IPv4 and IPv6 records are up to date.\n"
 
     if a_record_changed or aaaa_record_changed:
-        execute_change_set(changes)
+        changes_result = execute_change_set(changes)
+        if not changes_result:
+            logging.error("Error during update!")
+            return "Error: Updates did not complete successfully.\n"
 
+    ret_val += "IPv4 and IPv6 records updated successfully.\n"
     return ret_val
 
 
@@ -207,8 +211,13 @@ def execute_change_set(changes):
     logging.info("Change set executed")
     changes.create()
     while changes.status != 'done':
-        logging.info("Waiting for changes to complete. Change status is {}".format(changes.status))
-        time.sleep(20)
+        if changes.status != 'pending':
+            logging.error("Error: Unknown change status: {}".format(changes.status))
+            return False
+        elif changes.status == 'pending':
+            logging.info("Waiting for changes to complete. Change status is {}".format(changes.status))
+        time.sleep(5)
         changes.reload()
+    return True
 
 # app.run()
