@@ -82,6 +82,11 @@ def main(request):
     # Get a list of the current records
     records = get_records()
 	
+    if records is None:
+        logging.error("Did not get any records from API.")
+        ret_val = "API Error: no records retrieved from API."
+        return ret_val
+        
 	# Old way
 	#    # Check for matching records
 	#    for record in records:
