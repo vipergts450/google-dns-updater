@@ -134,9 +134,11 @@ def main(request):
             aaaa_record_checked = record
             logging.debug("AAAA record data: {}".format(aaaa_record_checked))
             
-    if (a_record_changed or aaaa_record_changed):
+    if (a_record_found and a_record_changed):
         add_to_change_set(a_record_checked, 'delete')
         add_to_change_set(create_record_set(host, a_record_checked.record_type, ipv4), 'create')
+        
+    if (aaaa_record_found and aaaa_record_changed):
         add_to_change_set(aaaa_record_checked, 'delete')
         add_to_change_set(create_record_set(host, aaaa_record_checked.record_type, ipv6), 'create')
         
